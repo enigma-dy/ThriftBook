@@ -6,25 +6,46 @@ import { generateTokens } from "../utils/generateTokens.js";
 import Book from "../models/Book.js";
 
 export const registerUser = asyncHandler(async (req, res, next) => {
-  const { email, password } = req.body;
+  const {
+    fullName,
+    email,
+    password,
+    role,
+    phoneNumber,
+    address,
+    paymentMethod,
+    paymentToken,
+    paymentCard,
+    billingAddress,
+  } = req.body;
 
-  if (!email || !password) {
-    return next(new apiError(400, "email and password are required"));
+  if (!fullName || !email || !password) {
+    return next(
+      new apiError(400, "Full name, email, and password are required")
+    );
   }
 
-  const formatedEmail = email.trim().toLowerCase().replace(/\s+/g, "");
+  const formattedEmail = email.trim().toLowerCase().replace(/\s+/g, "");
 
-  const existedUser = await User.findOne({ email: formatedEmail });
+  const existingUser = await User.findOne({ email: formattedEmail });
 
-  if (existedUser) {
+  if (existingUser) {
     return next(new apiError(409, "User already exists with this email"));
   }
 
-  const hashedPassword = await bcypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await User.create({
-    email: formatedEmail,
+    fullName,
+    email: formattedEmail,
     password: hashedPassword,
+    role,
+    phoneNumber,
+    address,
+    paymentMethod,
+    paymentToken,
+    paymentCard,
+    billingAddress,
   });
 
   if (!user) {
@@ -33,7 +54,7 @@ export const registerUser = asyncHandler(async (req, res, next) => {
 
   return res.status(201).json({
     success: true,
-    message: "Admin created successfully",
+    message: "User registered successfully",
     data: {
       ...user._doc,
       password: undefined,
