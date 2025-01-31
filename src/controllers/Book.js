@@ -7,6 +7,7 @@ import {
   deleteImageFromCloudinary,
   uploadFileToCloudinary,
 } from "../utils/cloudinary.js";
+
 import Joi from "joi";
 import { buildBookQuery } from "../utils/buildQuery.js";
 
@@ -170,7 +171,7 @@ export const updateBook = asyncHandler(async (req, res, next) => {
   const userData = req.user;
 
   if (userData.role !== "admin") {
-    return next(new apiError(403, "unauthorized Request"));
+    return next(new apiError(403, "Unauthorized request"));
   }
 
   const bookId = req.params.id;
@@ -180,56 +181,63 @@ export const updateBook = asyncHandler(async (req, res, next) => {
   }
 
   const { error } = validateBook(req.body);
-
   if (error) {
     return next(new apiError(400, error.details[0].message));
   }
 
-  const { title, description, category, trending, image, oldPrice, newPrice } =
+  const { title, description, category, trending, oldPrice, newPrice } =
     req.body;
 
   const findedBook = await Book.findById(bookId).select("-file");
-
   if (!findedBook) {
     return next(new apiError(404, "Book not found"));
   }
 
-  if (
-    title.trim().replace(/\s+/g, " ") === findedBook.title &&
-    description.trim().replace(/\s+/g, " ") === findedBook.description &&
-    category === findedBook.category &&
-    trending === findedBook.trending &&
-    image.url === findedBook.image.url &&
-    image.publicId === findedBook.image.publicId &&
-    oldPrice === findedBook.oldPrice &&
-    newPrice === findedBook.newPrice
-  ) {
-    return next(new apiError(400, "No changes found"));
+  let cloudinaryImage = findedBook.image;
+  let fileUrl = findedBook.file;
+
+  if (req.files?.image) {
+    const image = req.files.image;
+
+    const cloudinaryUploadResult = await uploadImageOnCloudinary(image.data);
+    if (!cloudinaryUploadResult) {
+      return next(new apiError(500, "Failed to upload image to Cloudinary"));
+    }
+
+    if (findedBook?.image?.publicId) {
+      const cloudinaryDeleteResult = await deleteImageFromCloudinary(
+        findedBook.image.publicId
+      );
+      if (!cloudinaryDeleteResult) {
+        return next(
+          new apiError(
+            500,
+            `Failed to delete image with ID: ${findedBook.image.publicId} from Cloudinary`
+          )
+        );
+      }
+    }
+
+    cloudinaryImage = {
+      url: cloudinaryUploadResult.secure_url,
+      publicId: cloudinaryUploadResult.public_id,
+    };
   }
 
-  // delete image from cloudinary if image is changed
-  if (findedBook?.image?.publicId !== image.publicId) {
-    const cloudinaryDeleteResult = await deleteImageFromCloudinary(
-      findedBook?.image?.publicId
+  if (req.files?.file) {
+    const file = req.files.file;
+    const fileExtension = file.name.split(".").pop();
+    const fileName = `${new Date().getTime()}.${fileExtension}`;
+
+    const cloudinaryFileResult = await uploadFileToCloudinary(
+      file.data,
+      fileName
     );
-    if (!cloudinaryDeleteResult) {
-      return next(
-        new apiError(
-          500,
-          `Failed to delete image with ID: ${findedBook.image.publicId} from Cloudinary`
-        )
-      );
-    }
-    // now upload the new image on cloudinary
-    const cloudinaryUploadResult = await uploadImageOnCloudinary(image.url);
-    if (!cloudinaryUploadResult) {
-      return next(
-        new apiError(500, "Failed to upload image on Cloudinary, try again")
-      );
+    if (!cloudinaryFileResult) {
+      return next(new apiError(500, "Failed to upload file to Cloudinary"));
     }
 
-    image.url = cloudinaryUploadResult.secure_url;
-    image.publicId = cloudinaryUploadResult.public_id;
+    fileUrl = cloudinaryFileResult.secure_url;
   }
 
   const formattedBook = {
@@ -237,7 +245,8 @@ export const updateBook = asyncHandler(async (req, res, next) => {
     description: description.trim().replace(/\s+/g, " "),
     category: category,
     trending,
-    image,
+    image: cloudinaryImage,
+    file: fileUrl,
     oldPrice,
     newPrice,
   };
@@ -347,6 +356,23 @@ export const readBook = asyncHandler(async (req, res, next) => {
   });
 });
 
+export const getTotalPurchasedBooks = asyncHandler(async (req, res, next) => {
+  const totalPurchasedBooks = await Access.countDocuments();
+  res.status(200).json({
+    success: true,
+    message: "Total purchased books retrieved successfully",
+    data: totalPurchasedBooks,
+  });
+});
+
+export const getTrendingBooks = asyncHandler(async (req, res, next) => {
+  const trendingBooks = await Book.find({ trending: true });
+  res.status(200).json({
+    success: true,
+    message: "Trending books retrieved successfully",
+    data: trendingBooks,
+  });
+});
 const validateBook = (data) => {
   const schema = Joi.object({
     title: Joi.string().min(3).max(80).required(),

@@ -4,6 +4,7 @@ import { apiError } from "../utils/apiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { generateTokens } from "../utils/generateTokens.js";
 import Book from "../models/Book.js";
+import Access from "../models/Access.js";
 
 export const registerUser = asyncHandler(async (req, res, next) => {
   const {
@@ -79,7 +80,7 @@ export const loginUser = asyncHandler(async (req, res, next) => {
     return next(new apiError(404, "User not found"));
   }
 
-  const isPasswordValid = await bcypt.compare(password, user.password);
+  const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
     return next(new apiError(401, "Invalid credentials"));
@@ -146,5 +147,15 @@ export const getUserBooks = asyncHandler(async (req, res, next) => {
     success: true,
     message: "Books retrieved successfully",
     data: books,
+  });
+});
+
+export const getUserPurchaseHistory = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+  const userPurchaseHistory = await Access.countDocuments({ user: userId });
+  res.status(200).json({
+    success: true,
+    message: "User purchase history retrieved successfully",
+    data: userPurchaseHistory,
   });
 });
