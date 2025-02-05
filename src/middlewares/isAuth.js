@@ -4,7 +4,7 @@ import User from "../models/User.js";
 export const isAuthenticated = async (req, res, next) => {
   try {
     const accessToken =
-      req.cookies?.accessToken ||
+      req.cookies?.BookAccessToken ||
       req.header("Authorization")?.replace("Bearer ", "");
 
     if (!accessToken) {
@@ -26,6 +26,7 @@ export const isAuthenticated = async (req, res, next) => {
     }
 
     req.user = user;
+
     next();
   } catch (error) {
     if (error.name === "JsonWebTokenError") {

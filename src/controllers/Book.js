@@ -12,7 +12,6 @@ import Joi from "joi";
 import { buildBookQuery } from "../utils/buildQuery.js";
 
 export const createBook = asyncHandler(async (req, res, next) => {
-  console.log(req.body);
   const userData = req.user;
   const author = req.user._id;
 

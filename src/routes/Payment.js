@@ -4,10 +4,11 @@ import {
   handlePaymentWebhook,
   verifyPayment,
 } from "../controllers/Payment.js";
+import { isAuthenticated } from "../middlewares/isAuth.js";
 
 const router = express.Router();
 
-router.post("/initiate", initiatePayment);
+router.post("/initiate", isAuthenticated, initiatePayment);
 
 router.post("/webhook", handlePaymentWebhook);
 

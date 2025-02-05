@@ -15,11 +15,13 @@
     "prettier": "^3.3.3"
   },
   "dependencies": {
+    "@paystack/inline-js": "^2.22.2",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "cloudinary": "^2.5.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "express-fileupload": "^1.5.1",
@@ -29,6 +31,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.3",
     "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.2",
+    "paystack-js": "^0.18.1",
     "streamifier": "^0.1.1"
   }
 }

@@ -6,19 +6,10 @@ import { generateTokens } from "../utils/generateTokens.js";
 import Book from "../models/Book.js";
 import Access from "../models/Access.js";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const registerUser = asyncHandler(async (req, res, next) => {
-  const {
-    fullName,
-    email,
-    password,
-    role,
-    phoneNumber,
-    address,
-    paymentMethod,
-    paymentToken,
-    paymentCard,
-    billingAddress,
-  } = req.body;
+  const { fullName, email, password, role, phoneNumber, address } = req.body;
 
   if (!fullName || !email || !password) {
     return next(
@@ -43,10 +34,6 @@ export const registerUser = asyncHandler(async (req, res, next) => {
     role,
     phoneNumber,
     address,
-    paymentMethod,
-    paymentToken,
-    paymentCard,
-    billingAddress,
   });
 
   if (!user) {
@@ -89,18 +76,19 @@ export const loginUser = asyncHandler(async (req, res, next) => {
   const payload = {
     userId: user._id,
     userRole: user.role,
+    userEmail: user.email,
   };
 
   const { accessToken, refreshToken } = generateTokens(payload);
 
   const options = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_SS || "lax",
+    secure: isProduction,
+    sameSite: isProduction ? "None" : "Lax",
   };
 
-  res.cookie("accessToken", accessToken, options);
-  res.cookie("refreshToken", refreshToken, options);
+  res.cookie("BookAccessToken", accessToken, options);
+  res.cookie("BookRefreshToken", refreshToken, options);
 
   return res.status(200).json({
     success: true,
@@ -121,8 +109,8 @@ export const logoutUser = asyncHandler(async (req, res, next) => {
 
   return res
     .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
+    .clearCookie("BookAccessToken", options)
+    .clearCookie("BookRefreshToken", options)
     .json({ success: true, message: "Logged out successfully" });
 });
 

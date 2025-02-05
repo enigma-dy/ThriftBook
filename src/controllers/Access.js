@@ -78,6 +78,8 @@ export const getMostPurchasedBooks = asyncHandler(async (req, res, next) => {
       $project: {
         _id: 0,
         bookTitle: "$bookDetails.title",
+        bookDescription: "$bookDetails.description",
+        image: "$bookDetails.image",
         purchaseCount: 1,
       },
     },
