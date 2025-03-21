@@ -19,13 +19,22 @@ app.use(
   })
 );
 
+const allowedOrigins = process.env.ORIGIN.split(",");
+
 app.use(
   cors({
-    origin: process.env.ORIGIN,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     credentials: true,
   })
 );
+
 
 app.use(
   express.json({
